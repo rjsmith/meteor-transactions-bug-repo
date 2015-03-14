@@ -6,7 +6,7 @@ fooCollection = new Mongo.Collection('fooCollection');
 tx.checkPermission =  function(action, collection, doc, modifier) {
   var check,
       userId = Meteor.userId();
-  console.log('checkPermission '+action+' for collection:' + collection._name+' and doc:'+JSON.stringify(doc));
+  console.log('checkPermission '+action+' for collection:' + collection._name+' and doc:'+JSON.stringify(doc) + ' and modifier:'+JSON.stringify(modifier));
   return doc !== undefined;
 };
 

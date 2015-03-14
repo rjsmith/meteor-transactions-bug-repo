@@ -58,7 +58,7 @@ Jasmine.onTest(function () {
       console.log('recoveredFooDoc:' + JSON.stringify(recoveredFooDoc));
       expect(recoveredFooDoc.transaction_id).toEqual(transaction_id);
     });
-
+ 
 
   })
 })

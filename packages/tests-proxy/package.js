@@ -7,5 +7,6 @@ Package.describe({
 
 Package.onUse(function (api) {
 	api.use("coffeescript", ["client", "server"]);
+	api.add_files("tests/jasmine/server/integration/addToSetEachSpec.js",["server"]);
 	api.add_files("tests/jasmine/server/integration/bugrepoSpec.js",["server"]);
 });
