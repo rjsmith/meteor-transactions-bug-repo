@@ -49,7 +49,6 @@ Jasmine.onTest(function () {
       expect(fooCursor.count()).toBe(0);
 
       // EXECUTE
-      // ** The redo will fail because the tx.checkPermission will return false
       tx.redo(transaction_id);
 
       // VERIFY
