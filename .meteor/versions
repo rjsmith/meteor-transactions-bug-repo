@@ -41,6 +41,7 @@ mobile-status-bar@1.0.2
 mongo@1.0.11
 observe-sequence@1.0.4
 ordered-dict@1.0.2
+package-version-parser@3.0.0
 practicalmeteor:chai@1.9.2_3
 practicalmeteor:loglevel@1.1.0_3
 random@1.0.2
@@ -49,8 +50,9 @@ reactive-var@1.0.4
 reload@1.1.2
 retry@1.0.2
 routepolicy@1.0.4
-sanjo:jasmine@0.12.5
-sanjo:karma@1.4.1
+sanjo:jasmine@0.12.6
+sanjo:karma@1.4.2
+sanjo:meteor-version@1.0.0
 service-configuration@1.0.3
 session@1.0.5
 spacebars@1.0.5

@@ -53,7 +53,7 @@ Jasmine.onTest(function() {
       var txDoc = tx.Transactions.findOne({_id: recoveredFoo.transaction_id});
       console.log(JSON.stringify(txDoc));
       expect(txDoc.items.updated[0].inverse).toEqual(
-        {"command":"$addToSet","data":[{"key":"foo","value":{"bar":1}}]}
+        { command: '$addToSet', data: [ { key: 'foo', value: { json: '{"bar":1}' } } ] }
         );
       
     })

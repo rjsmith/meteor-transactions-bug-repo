@@ -58,7 +58,7 @@ Jasmine.onTest(function() {
       var txDoc = tx.Transactions.findOne({_id: recoveredFoo.transaction_id});
       console.log(JSON.stringify(txDoc));
       expect(txDoc.items.updated[0].inverse).toEqual(
-        { command: '$set', data: [ { key: 'foo', value: [ { bar: 1 }, { bar: 2 }, { bar: 3 } ] } ] }
+        { command: '$pull', data: [ { key: 'foo', value: { json: '{"bar":4}' } } ] }
         );
       
     })
@@ -123,11 +123,13 @@ Jasmine.onTest(function() {
 
       // Check transaction
       var txDoc = tx.Transactions.findOne({_id: recoveredFoo.transaction_id});
-      expect(txDoc.items.updated[0].update).toEqual({ command: '$addToSet', data: [ { key: 'foo', value: { '＄each': [ { bar: 4 }, { bar: 5 } ] } } ] });
+      expect(txDoc.items.updated[0].update).toEqual({ command: '$addToSet', data: [ { key: 'foo', value: { json: '{"$each":[{"bar":4},{"bar":5}]}' } } ] });
     })
 
     it ('can be updated with $addToSet modifier using $each and then undone and redone', function () {
       // SETUP
+      var originalInverseOperations = tx.inverseOperations.$addToSet;
+      tx.inverseOperations.$addToSet = bruteForceAddToSetInverse;      
       var newBars = [{bar: 4}, {bar: 5}];
       tx.start('update foo');
       fooCollection.update(
@@ -156,6 +158,8 @@ Jasmine.onTest(function() {
         {foo: {bar: 4}});
       expect(fooCursor.count()).toBe(1);      
 
+      // TEARDOWN
+      tx.inverseOperations.$addToSet = originalInverseOperations;
     })
 
     it ('can be updated with $addToSet modifier with multiple fields', function () {
@@ -183,12 +187,14 @@ Jasmine.onTest(function() {
       expect(recoveredFoo.fooBar).toEqual([{fooBar: 1}]);
       // Check transaction
       var txDoc = tx.Transactions.findOne({_id: recoveredFoo.transaction_id});
-      expect(txDoc.items.updated[0].update).toEqual({"command":"$addToSet","data":[{"key":"foo","value":{"＄each":[{"bar":4},{"bar":5}]}},{"key":"fooBar","value":{"fooBar":1}}]});
-      expect(txDoc.items.updated[0].inverse).toEqual({"command":"$set","data":[{"key":"foo","value":[{"bar":1},{"bar":2},{"bar":3}]},{"key":"fooBar","value":[]}]});
+      expect(txDoc.items.updated[0].update).toEqual({ command: '$addToSet', data: [ { key: 'foo', value: { json: '{"$each":[{"bar":4},{"bar":5}]}' } }, { key: 'fooBar', value: { json: '{"fooBar":1}' } } ] });
+      expect(txDoc.items.updated[0].inverse).toEqual({ command: '$pull', data: [ { key: 'foo', value: { json: '{"$each":[{"bar":4},{"bar":5}]}' } }, { key: 'fooBar', value: { json: '{"fooBar":1}' } } ] });
     });
 
     it ('can be updated with $addToSet modifier with multiple fields and then undone and redone', function () {
       // SETUP
+      var originalInverseOperations = tx.inverseOperations.$addToSet;
+      tx.inverseOperations.$addToSet = bruteForceAddToSetInverse;      
       var newBars = [{bar: 4}, {bar: 5}];
       tx.start('update foo');
       fooCollection.update(
@@ -219,6 +225,9 @@ Jasmine.onTest(function() {
       var recoveredFoo = fooCursor.fetch()[0];
       expect(recoveredFoo.fooBar).toEqual([{fooBar: 1}]);
      
+      // TEARDOWN
+      tx.inverseOperations.$addToSet = originalInverseOperations;
+
     });
 
     it ('can be updated with $addToSet and $set modifiers', function () {
@@ -254,7 +263,7 @@ Jasmine.onTest(function() {
       console.log(JSON.stringify(txDoc));
       expect(txDoc.items.updated.length).toBe(2);
       expect(txDoc.items.updated[0].inverse).toEqual(
-        {"command":"$set","data":[{"key":"foo","value":[{"bar":1},{"bar":2},{"bar":3}]}]}
+        { command: '$pull', data: [ { key: 'foo', value: { json: '{"bar":4}' } } ] }
         );
       expect(txDoc.items.updated[1].inverse).toEqual(
         {"command":"$unset","data":[{"key":"fooBar","value":""}]}
@@ -302,3 +311,21 @@ Jasmine.onTest(function() {
   });
    
 })
+
+function bruteForceAddToSetInverse (collection, existingDoc, updateMap, opt) {
+  // Function to use $set or $unset to restore original state of updated fields
+  var self = this, inverseCommand = '$set', formerValues = {};
+  // Brute force approach to ensure previous array is restored on undo
+  // even if $addToSet uses sub-modifiers like $each / $slice
+  // console.log('existingDoc:'+JSON.stringify(existingDoc));
+  _.each(_.keys(updateMap), function (keyName) {
+    var formerVal = self._drillDown(existingDoc,keyName);
+     if (typeof formerVal !== 'undefined') {
+      formerValues[keyName] = formerVal;
+     } else {
+      // Reset to empty array. Really should be an $unset but cannot mix inverse actions
+      formerValues[keyName] = [];
+     }
+  })
+  return {command:inverseCommand,data:formerValues};
+};
